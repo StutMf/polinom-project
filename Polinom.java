@@ -1,0 +1,127 @@
+package semestrovka;
+
+import sun.reflect.generics.tree.Tree;
+
+import java.io.*;
+import java.util.*;
+
+public class Polinom {
+    private List<PolinomPair> polinom = new ArrayList<>();
+    private Map<Integer, Integer> degrees = new TreeMap<>();
+
+    public Polinom() {}
+
+    //??
+    public Polinom(String filename) {
+        try {
+            FileReader fileReader = new FileReader(filename);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+
+            String line = bufferedReader.readLine();
+            while (line != null) {
+                String number = "";
+                int coefficient = 0;
+                for(int i = 0; i < line.length(); i++) {
+                    if(line.charAt(i) == '-') {
+                        coefficient = Integer.parseInt(number);
+                        number = "";
+                    } else {
+                        number += line.charAt(i);
+                    }
+                }
+                int deg = Integer.parseInt(number);
+                insert(coefficient, deg);
+                line = bufferedReader.readLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //O(n)
+    public String toString() {
+        String stringPolinom = "";
+        for(PolinomPair polinomPair : polinom) {
+            stringPolinom += (polinomPair.getCoefficient() > 0 ? "+" : "") + polinomPair.getCoefficient() + "x^" + polinomPair.getDeg();
+        }
+        return stringPolinom;
+    }
+
+    //O(1)
+    public void insert(int coefficient, int deg) {
+        polinom.add(new PolinomPair(coefficient, deg));
+    }
+
+    //O(n)
+    public void combine() {
+        mapping(this);
+        polinom.clear();
+        for(Map.Entry<Integer, Integer> entry : degrees.entrySet()) {
+            insert(entry.getValue(), entry.getKey());
+        }
+        degrees.clear();
+    }
+
+    //O(n)??
+    public void delete(int deg) {
+        polinom.removeIf(polinomPair -> polinomPair.getDeg() == deg);
+    }
+
+    //
+    public void sum(Polinom p){
+        mapping(this);
+        mapping(p);
+        polinom.clear();
+        for(Map.Entry<Integer, Integer> entry : degrees.entrySet()) {
+            insert(entry.getValue(), entry.getKey());
+        }
+        degrees.clear();
+    }
+
+    public void differentiate(){
+        List<PolinomPair> p = new ArrayList<>();
+        for(PolinomPair polinomPair : polinom){
+            if (polinomPair.getDeg() != 0) {
+                PolinomPair pP = new PolinomPair(polinomPair.getCoefficient() * polinomPair.getDeg(), polinomPair.getDeg() - 1);
+                p.add(pP);
+            }
+        }
+        polinom = p;
+    }
+
+    public int value(int x){
+        boolean isFirst = true;
+        Map<Integer, Integer> sorted = new TreeMap<>();
+        sort();
+        int result = sorted.get(sorted.firstKey());
+
+        for(Map.Entry<Integer, Integer> entry : sorted.entrySet()) {
+            if (isFirst) { isFirst = false; }
+            else {
+                result = result * x + entry.getValue();
+            }
+        }
+        return result;
+    }
+
+    public void deleteOdd(){
+            polinom.removeIf(polinomPair -> polinomPair.getCoefficient() % 2 != 0);
+    }
+
+    private void mapping(Polinom p){
+        for(PolinomPair polinomPair : p.polinom) {
+            if(degrees.containsKey(polinomPair.getDeg())) {
+                degrees.replace(polinomPair.getDeg(), degrees.get(polinomPair.getDeg()) + polinomPair.getCoefficient());
+            } else {
+                degrees.put(polinomPair.getDeg(), polinomPair.getCoefficient());
+            }
+        }
+    }
+
+    private TreeMap sort(){
+        mapping(this);
+        Map<Integer, Integer> sorted = new TreeMap<>(Collections.reverseOrder());
+        sorted.putAll(degrees);
+        return sorted;
+    }
+}
